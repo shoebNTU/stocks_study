@@ -22,6 +22,7 @@ def is_valid_ticker(symbol):
 @st.cache_data
 def load_data(file_path):
     data = pd.read_csv(file_path)
+    data['Last Sale'] = data['Last Sale'].apply(lambda x: float(x.replace('$','')))
     return data
 
 def get_data(ticker_in):
@@ -69,10 +70,20 @@ def get_data(ticker_in):
 st.set_page_config(layout="wide")
 st.title('Stock search')
 
-st.sidebar.title('Parameters')
+st.sidebar.title('Search Parameters')
+
+name = st.sidebar.text_input('Please enter `Name` of the company',value='').lower().strip()
+symbol = st.sidebar.text_input('Please enter `Ticker` of the company',value='').lower().strip()
+sectors = ['Basic Materials', 'Consumer Discretionary', 'Consumer Staples',
+       'Energy', 'Finance', 'Health Care', 'Industrials', 'Miscellaneous',
+       'Real Estate', 'Technology', 'Telecommunications', 'Utilities', 'None']
+sector_sel = st.sidebar.multiselect('Please select one or more sectors of interest', options=sectors, default=sectors)
+
+# do you want to check for halal status?
+halal_check = st.sidebar.selectbox(label='Do you want to check for Halal status?', options = ['Yes','No'], index=1)
+
 # enter number of search terms
 no_of_search = st.sidebar.number_input(label='Please enter `number` of `keywords` to be searched', value=1, min_value=0)
-
 if no_of_search:
     search_text = []
     for i in range(no_of_search):
@@ -81,8 +92,6 @@ if no_of_search:
 
     search_expr = ' & '.join([f"df.Description.astype(str).str.contains('{text}', case=False)"  for text in search_text]) # possible to change to OR
 
-    # do you want to check for halal status?
-    halal_check = st.sidebar.selectbox(label='Do you want to check for Halal status?', options = ['Yes','No'])
 
 submit = st.sidebar.button('Submit')
 
@@ -97,16 +106,27 @@ with st.expander('Halal calculation'):
 if submit:
     # read dataframe
     df = load_data('small_micro_nano_halal_6.csv')
-    df = df[eval(search_expr)] # filtering based on description
-    if halal_check == 'Yes':
-         df = df[(df.nc_income.astype(float) < 5) & \
-                (df.int_dep.astype(float) < 30) & (df.debt.astype(float) < 30)]
+    df = df[df.Symbol.str.contains(symbol, case=False)]
+    df.Sector = df.Sector.fillna('None')
+    df = df[df.Sector.astype(str).str.contains('|'.join(sector_sel))]
+    if len(df):
+        df = df[df.Name.str.contains(name, case=False)]
 
-    df = df[['Symbol','Country', 
-       'nc_income', 'int_dep', 'debt', 'Sector', 'Description','IPO Year', 'Industry',]]
-    df.reset_index(drop=True, inplace=True)
-    st.success(f'Total number of rows found - {len(df)}')
-    st.data_editor(df, use_container_width=True)
+        print(list(df.Sector.unique()))
+        if no_of_search:
+            df = df[eval(search_expr)] # filtering based on description
+        if halal_check == 'Yes':
+            df = df[(df.nc_income.astype(float) < 5) & \
+                    (df.int_dep.astype(float) < 30) & (df.debt.astype(float) < 30)]
+
+        df = df[['Symbol','Name', 'Country',
+        'nc_income', 'int_dep', 'debt', 'Sector', 'Description','IPO Year', 'Industry']]
+        
+        df.reset_index(drop=True, inplace=True)
+        st.success(f'Total number of rows found - {len(df)}')
+        st.data_editor(df, use_container_width=True)
+    else:
+        st.error('Please check the ticker.')
 
 with st.expander('Ticker Query for non-NASDAQ stocks'):
     st.info('Please enter ticker symbol to check for `HALAL` status')

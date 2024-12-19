@@ -109,19 +109,25 @@ if submit:
     st.data_editor(df, use_container_width=True)
 
 with st.expander('Ticker Query for non-NASDAQ stocks'):
+    st.info('Please enter ticker symbol to check for `HALAL` status')
     ticker_input = st.text_input(label='Please enter symbol. Refer https://finance.yahoo.com for correct ticker symbol.', value='').upper().strip()
-    if is_valid_ticker(ticker_input):
-        nc_income, interest_bearing_securities, interest_bearing_debt = get_data(ticker_input)
-        st.dataframe(pd.DataFrame({'nc_income':[nc_income],'interest_bearing_securities':[interest_bearing_securities], 
-                      'interest_bearing_debt':[interest_bearing_debt]}))
-        c1,_ = st.columns([1,4])
-        with c1:
-            if (0 < nc_income < 5) and (0 < interest_bearing_securities < 30) and (0 < interest_bearing_debt < 30):
-                st.success('HALAL')
-            elif (nc_income < 5) and (interest_bearing_securities < 30) and (interest_bearing_debt < 30):
-                st.warning('Likely HALAL. Please check.')
-            else:
-                st.error('Non-HALAL')
 
-    else:
-        st.error('Please validate your ticker symbol at yahoo finance')
+    if ticker_input:
+        get_status = st.button('Check')
+
+        if get_status:
+            if is_valid_ticker(ticker_input):
+                nc_income, interest_bearing_securities, interest_bearing_debt = get_data(ticker_input)
+                st.dataframe(pd.DataFrame({'nc_income':[nc_income],'interest_bearing_securities':[interest_bearing_securities], 
+                            'interest_bearing_debt':[interest_bearing_debt]}))
+                c1,_ = st.columns([1,4])
+                with c1:
+                    if (0 < nc_income < 5) and (0 < interest_bearing_securities < 30) and (0 < interest_bearing_debt < 30):
+                        st.success('HALAL')
+                    elif (nc_income < 5) and (interest_bearing_securities < 30) and (interest_bearing_debt < 30):
+                        st.warning('Likely HALAL. Please check.')
+                    else:
+                        st.error('Non-HALAL')
+
+            else:
+                st.error('Please validate your ticker symbol at yahoo finance')

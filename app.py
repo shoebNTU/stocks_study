@@ -8,6 +8,21 @@ def nan_to_zero(x):
         return 0.0
     else:
         return x
+    
+def is_valid_ticker(symbol):
+    ticker = yf.Ticker(symbol)
+    try:
+        info = ticker.info
+        # Check if the 'symbol' key exists in the info dictionary
+        return 'symbol' in info and info['symbol'] == symbol
+    except Exception as e:
+        print(f"Error: {e}")
+        return False
+    
+@st.cache_data
+def load_data(file_path):
+    data = pd.read_csv(file_path)
+    return data
 
 def get_data(ticker_in):
 
@@ -54,9 +69,6 @@ def get_data(ticker_in):
 st.set_page_config(layout="wide")
 st.title('Stock search')
 
-# read dataframe
-df = pd.read_csv('small_micro_nano_halal_6.csv')
-
 st.sidebar.title('Parameters')
 # enter number of search terms
 no_of_search = st.sidebar.number_input(label='Please enter `number` of `keywords` to be searched', value=1, min_value=0)
@@ -69,14 +81,8 @@ if no_of_search:
 
     search_expr = ' & '.join([f"df.Description.astype(str).str.contains('{text}', case=False)"  for text in search_text]) # possible to change to OR
 
-    df = df[eval(search_expr)] # filtering based on description
-
     # do you want to check for halal status?
     halal_check = st.sidebar.selectbox(label='Do you want to check for Halal status?', options = ['Yes','No'])
-
-    if halal_check == 'Yes':
-         df = df[(df.nc_income.astype(float) < 5) & \
-                (df.int_dep.astype(float) < 30) & (df.debt.astype(float) < 30)]
 
 submit = st.sidebar.button('Submit')
 
@@ -89,8 +95,33 @@ with st.expander('Halal calculation'):
             
         )
 if submit:
+    # read dataframe
+    df = load_data('small_micro_nano_halal_6.csv')
+    df = df[eval(search_expr)] # filtering based on description
+    if halal_check == 'Yes':
+         df = df[(df.nc_income.astype(float) < 5) & \
+                (df.int_dep.astype(float) < 30) & (df.debt.astype(float) < 30)]
+
     df = df[['Symbol','Country', 
        'nc_income', 'int_dep', 'debt', 'Sector', 'Description','IPO Year', 'Industry',]]
     df.reset_index(drop=True, inplace=True)
     st.success(f'Total number of rows found - {len(df)}')
-    st.write(df)
+    st.data_editor(df, use_container_width=True)
+
+with st.expander('Ticker Query for non-NASDAQ stocks'):
+    ticker_input = st.text_input(label='Please enter symbol. Refer https://finance.yahoo.com for correct ticker symbol.', value='').upper().strip()
+    if is_valid_ticker(ticker_input):
+        nc_income, interest_bearing_securities, interest_bearing_debt = get_data(ticker_input)
+        st.dataframe(pd.DataFrame({'nc_income':[nc_income],'interest_bearing_securities':[interest_bearing_securities], 
+                      'interest_bearing_debt':[interest_bearing_debt]}))
+        c1,_ = st.columns([1,4])
+        with c1:
+            if (0 < nc_income < 5) and (0 < interest_bearing_securities < 30) and (0 < interest_bearing_debt < 30):
+                st.success('HALAL')
+            elif (nc_income < 5) and (interest_bearing_securities < 30) and (interest_bearing_debt < 30):
+                st.warning('Likely HALAL. Please check.')
+            else:
+                st.error('Non-HALAL')
+
+    else:
+        st.error('Please validate your ticker symbol at yahoo finance')

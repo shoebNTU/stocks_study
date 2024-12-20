@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import yfinance as yf
+from PIL import Image
 
 def nan_to_zero(x):
     if np.isnan(x):
@@ -22,7 +23,7 @@ def is_valid_ticker(symbol):
 @st.cache_data
 def load_data(file_path):
     data = pd.read_csv(file_path)
-    data['Last Sale'] = data['Last Sale'].apply(lambda x: float(x.replace('$','')))
+    # data['Last Sale'] = data['Last Sale'].apply(lambda x: float(x.replace('$','')))
     return data
 
 def get_data(ticker_in):
@@ -70,7 +71,7 @@ def get_data(ticker_in):
 st.set_page_config(layout="wide")
 st.title('Stock search')
 
-st.sidebar.title('Search Parameters')
+st.sidebar.title('NASDAQ Search Parameters')
 
 name = st.sidebar.text_input('Please enter `Name` of the company',value='').lower().strip()
 symbol = st.sidebar.text_input('Please enter `Ticker` of the company',value='').lower().strip()
@@ -105,7 +106,7 @@ with st.expander('Halal calculation'):
         )
 if submit:
     # read dataframe
-    df = load_data('small_micro_nano_halal_6.csv')
+    df = load_data('small_micro_nano_halal_7.csv')
     df = df[df.Symbol.str.contains(symbol, case=False)]
     df.Sector = df.Sector.fillna('None')
     df = df[df.Sector.astype(str).str.contains('|'.join(sector_sel))]
@@ -128,10 +129,11 @@ if submit:
     else:
         st.error('Please check the ticker.')
 
-with st.expander('Ticker Query for non-NASDAQ stocks'):
+with st.expander('Ticker Query for Halal Check'):
     st.info('Please enter ticker symbol to check for `HALAL` status')
+    
     ticker_input = st.text_input(label='Please enter symbol. Refer https://finance.yahoo.com for correct ticker symbol.', value='').upper().strip()
-
+    
     if ticker_input:
         get_status = st.button('Check')
 
@@ -151,3 +153,4 @@ with st.expander('Ticker Query for non-NASDAQ stocks'):
 
             else:
                 st.error('Please validate your ticker symbol at yahoo finance')
+    st.image(Image.open('yfinance.png'), width=750)

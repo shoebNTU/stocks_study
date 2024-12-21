@@ -130,7 +130,7 @@ if no_of_search:
     search_text = []
     for i in range(no_of_search):
     # enter search term
-        search_text.append(st.sidebar.text_input(label='Please enter `keyword` to be searched in `DESCRIPTION` column', value='', key=i).lower().strip())
+        search_text.append(st.sidebar.text_input(label="Please enter `keyword` to be searched in company's description", value='', key=i).lower().strip())
 
     search_expr = ' & '.join([f"df.Description.astype(str).str.contains('{text}', case=False)"  for text in search_text]) # possible to change to OR
 
@@ -213,3 +213,10 @@ with st.expander('Ticker Query for Halal Check'):
             else:
                 st.error('Please validate your ticker symbol at yahoo finance')
     st.image(Image.open('yfinance.png'), width=750)
+
+
+
+
+
+
+

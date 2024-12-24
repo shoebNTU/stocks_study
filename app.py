@@ -86,7 +86,7 @@ def get_data(ticker_in, to_get_info):
           market_cap = ticker.info.get('marketCap',0.0)
 
         ret_total_debt = np.round(total_debt,2) if ~np.isnan(total_debt) else 'Not Found'
-        ret_market_cap = np.round(total_debt,2) if ~np.isnan(market_cap) else 'Not Found'
+        ret_market_cap = np.round(market_cap,2) if ~np.isnan(market_cap) else 'Not Found'
 
         if total_income > 0:
             non_compliant_ratio = non_compliant_income/total_income
@@ -208,15 +208,8 @@ with st.expander('Ticker Query for Halal Check'):
                     else:
                         st.success('HALAL')
                 if maybe:
-                    st.write('No calculation violation to rule out `Halal` status. However, one or more calculation related values `Not Found`.')
+                    st.write('No calculation violations to rule out `Halal` status. However, one or more calculation related values were `Not Found`.')
                 st.info('  \n'.join(to_show))
             else:
                 st.error('Please validate your ticker symbol at yahoo finance')
     st.image(Image.open('yfinance.png'), width=750)
-
-
-
-
-
-
-
